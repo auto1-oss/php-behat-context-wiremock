@@ -1,0 +1,26 @@
+{
+    "name": "auto1-oss/php-behat-context-wiremock",
+    "license": "Apache-2.0",
+    "type": "library",
+    "description": "Behat context for Wiremock support",
+    "minimum-stability": "stable",
+    "require": {
+        "php": ">=8.0",
+        "behat/behat": ">=3.0",
+        "symfony/http-client": ">=3.0",
+        "symfony/contracts": ">=1.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Auto1\\BehatContext\\Wiremock\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Auto1\\BehatContext\\Tests\\": "tests/"
+        }
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^10.5"
+    }
+}
