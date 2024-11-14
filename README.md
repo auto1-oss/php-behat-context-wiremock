@@ -1,5 +1,7 @@
 # php-behat-context-wiremock
 
+Elevate your testing game with this brilliant Behat context, perfect for crafting top-notch acceptance tests. Coupled with a WireMock server, it effortlessly mocks HTTP interactions for the service you're testing. This gem is a favourite among various teams at Auto1, celebrated for its versatility and lack of Auto1-specific quirks. It's a quintessential tool for those seeking a seamless and efficient testing experience, ensuring your projects run as smoothly as a well-brewed cup of tea. Cheers to better testing!
+
 This package provides a seamless integration between Behat tests and Wiremock, offering a straightforward method for mocking HTTP requests. It acts as a conduit between Behat scenarios and a Wiremock instance, enabling the creation of HTTP request expectations and mock responses without sacrificing Wiremock's inherent flexibility.
 
 ## Configuration Example
