@@ -285,6 +285,7 @@ class WiremockContext implements Context
         );
 
         $requestedStubsIds = [];
+        $requestedStubsCallCounts = [];
 
         foreach ($response['requests'] as $requestData) {
             if (!isset($requestData['stubMapping'])) {
@@ -305,6 +306,12 @@ class WiremockContext implements Context
 
             $mappedRequestStubId =  $requestData['stubMapping']['id'];
             $requestedStubsIds[] = $mappedRequestStubId;
+
+            if (!isset($requestedStubsCallCounts[$mappedRequestStubId])) {
+                $requestedStubsCallCounts[$mappedRequestStubId] = 0;
+            }
+
+            $requestedStubsCallCounts[$mappedRequestStubId]++;
         }
 
         $requestedStubsIds = array_unique($requestedStubsIds);
@@ -317,15 +324,8 @@ class WiremockContext implements Context
 
             throw new WiremockContextException('Unrequested stub(s) found: ' . json_encode($unrequestedStubs, JSON_PRETTY_PRINT));
         }
-    }
 
-    /**
-     * @throws WiremockContextException
-     */
-    #[AfterScenario]
-    public function allStubsMatchedAsExpectedForEachScenario(): void
-    {
-        $this->allStubsMatchedAsExpected();
+        $this->checkRequestedStubsCallCounts($requestedStubsCallCounts);
     }
 
     /**
@@ -367,25 +367,8 @@ class WiremockContext implements Context
      * @param array $requestedStubsCallCounts
      * @throws WiremockContextException
      */
-    private function allStubsMatchedAsExpected(): void
+    private function checkRequestedStubsCallCounts(array $requestedStubsCallCounts): void
     {
-        $response = $this->sendRequest(
-            'GET',
-            self::PATH_REQUESTS
-        );
-
-        $requestedStubsCallCounts = [];
-
-        foreach ($response['requests'] as $requestData) {
-            $mappedRequestStubId =  $requestData['stubMapping']['id'];
-
-            if (!isset($requestedStubsCallCounts[$mappedRequestStubId])) {
-                $requestedStubsCallCounts[$mappedRequestStubId] = 0;
-            }
-
-            $requestedStubsCallCounts[$mappedRequestStubId]++;
-        }
-
         $errors = [];
 
         foreach ($requestedStubsCallCounts as $stubId => $actualCount) {

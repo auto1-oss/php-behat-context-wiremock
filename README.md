@@ -75,6 +75,29 @@ For those running Behat within Docker, integrating a Wiremock container is strai
         And wiremock stubs from "dir2"
     ```
 
+- **Given wiremock stubs from and should be called exactly times**: This step loads stubs from a specified file or directory and sends them to Wiremock also gives you ability to verify that the stub is called exactly the specified number of times.
+
+  **Example**:
+    ```gherkin
+        Given wiremock stubs from "{filename}" and should be called exactly {count} times
+        And wiremock stubs from "dir2"
+    ```
+
+- **Given wiremock stubs from and should be called minimum times**: This step loads stubs from a specified file or directory and sends them to Wiremock also gives you ability to verify that the stub is called at least the specified number of times.
+
+  **Example**:
+    ```gherkin
+        Given wiremock stubs from "{filename}" and should be called minimum {count} times
+        And wiremock stubs from "dir2"
+    ```
+- **Given wiremock stubs from and should be called at most times**: This step loads stubs from a specified file or directory and sends them to Wiremock also gives you ability to verify that the stub is not called more than the specified number of times.
+
+  **Example**:
+    ```gherkin
+        Given wiremock stubs from "{filename}" and should be called at most {count} times
+        And wiremock stubs from "dir2"
+    ```
+
 ### Managing Wiremock State
 
 - **Given clean wiremock**: Resets Wiremock to its initial state.

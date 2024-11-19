@@ -204,7 +204,7 @@ class WiremockContextTest extends TestCase
         $this->wiremockContext->addStub($stubBody, 1, 'exact');
         $this->expectException(WiremockContextException::class);
         $this->expectExceptionMessage('Stub with URL "/test" was expected to be called exactly 1 time(s), but was called 2 time(s)');
-        $this->wiremockContext->allStubsMatchedAsExpectedForEachScenario();
+        $this->wiremockContext->allStubsMatchedStep();
     }
 
     public function testAllStubsMatchedStepWithExactMatchCountStrategy()
@@ -241,7 +241,7 @@ class WiremockContextTest extends TestCase
 
         $stubBody = '{"request": {"method": "GET", "url": "/test"}, "response": {"status": 200, "body": "Success"}}';
         $this->wiremockContext->addStub($stubBody, 1, 'exact');
-        $this->wiremockContext->allStubsMatchedAsExpectedForEachScenario();
+        $this->wiremockContext->allStubsMatchedStep();
     }
 
     public function testAllStubsMatchedStepWithMaxMatchCountStrategyFailed()
@@ -289,7 +289,7 @@ class WiremockContextTest extends TestCase
         $this->wiremockContext->addStub($stubBody, 1, 'max');
         $this->expectException(WiremockContextException::class);
         $this->expectExceptionMessage('Stub with URL "/test" was expected to be called at most 1 time(s), but was called 2 time(s)');
-        $this->wiremockContext->allStubsMatchedAsExpectedForEachScenario();
+        $this->wiremockContext->allStubsMatchedStep();
     }
 
     public function testAllStubsMatchedStepWithMinMatchCountStrategyFailed()
@@ -337,7 +337,7 @@ class WiremockContextTest extends TestCase
         $this->wiremockContext->addStub($stubBody, 3, 'min');
         $this->expectException(WiremockContextException::class);
         $this->expectExceptionMessage('Stub with URL "/test" was expected to be called minimum 3 time(s), but was called 2 time(s)');
-        $this->wiremockContext->allStubsMatchedAsExpectedForEachScenario();
+        $this->wiremockContext->allStubsMatchedStep();
     }
 
     public function testAllStubsMatchedStepWithMaxMatchCountStrategy()
@@ -374,7 +374,7 @@ class WiremockContextTest extends TestCase
 
         $stubBody = '{"request": {"method": "GET", "url": "/test"}, "response": {"status": 200, "body": "Success"}}';
         $this->wiremockContext->addStub($stubBody, 1, 'max');
-        $this->wiremockContext->allStubsMatchedAsExpectedForEachScenario();
+        $this->wiremockContext->allStubsMatchedStep();
     }
 
     public function testAllStubsMatchedStepWithMinMatchCountStrategy()
@@ -411,6 +411,6 @@ class WiremockContextTest extends TestCase
 
         $stubBody = '{"request": {"method": "GET", "url": "/test"}, "response": {"status": 200, "body": "Success"}}';
         $this->wiremockContext->addStub($stubBody, 1, 'min');
-        $this->wiremockContext->allStubsMatchedAsExpectedForEachScenario();
+        $this->wiremockContext->allStubsMatchedStep();
     }
 }
