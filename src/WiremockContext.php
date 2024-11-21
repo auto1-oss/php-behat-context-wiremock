@@ -77,8 +77,8 @@ class WiremockContext implements Context
     /**
      * @throws WiremockContextException
      */
-    #[Given('/^wiremock stubs from "([^"]+)" and should be called exactly (?P<expectedCallCount>\d+) times$/')]
-    public function addWiremockStubFromFileShouldBeCalledExactlyStep(string $path, int $expectedCallCount): void
+    #[Given('/^wiremock stubs from "([^"]+)" should be called (?P<expectedCallCount>\d+) times$/')]
+    public function addWiremockStubFromFileShouldBeCalledStep(string $path, int $expectedCallCount): void
     {
         $this->addWiremockStubFromFile($path, $expectedCallCount, self::STUB_MATCH_COUNT_STRATEGY_EXACT);
     }
@@ -86,8 +86,17 @@ class WiremockContext implements Context
     /**
      * @throws WiremockContextException
      */
-    #[Given('/^wiremock stubs from "([^"]+)" and should be called minimal (?P<expectedCallCount>\d+) times$/')]
-    public function addWiremockStubFromFileShouldBeCalledMinimalStep(string $path, int $expectedCallCount): void
+    #[Given('/^wiremock stubs from "([^"]+)" should be called once')]
+    public function addWiremockStubFromFileShouldBeCalledOnceStep(string $path): void
+    {
+        $this->addWiremockStubFromFile($path, 1, self::STUB_MATCH_COUNT_STRATEGY_EXACT);
+    }
+
+    /**
+     * @throws WiremockContextException
+     */
+    #[Given('/^wiremock stubs from "([^"]+)" should be called at least (?P<expectedCallCount>\d+) times$/')]
+    public function addWiremockStubFromFileShouldBeCalledAtLeastStep(string $path, int $expectedCallCount): void
     {
         $this->addWiremockStubFromFile($path, $expectedCallCount, self::STUB_MATCH_COUNT_STRATEGY_MIN);
     }
@@ -95,7 +104,7 @@ class WiremockContext implements Context
     /**
      * @throws WiremockContextException
      */
-    #[Given('/^wiremock stubs from "([^"]+)" and should be called at most (?P<expectedCallCount>\d+) times$/')]
+    #[Given('/^wiremock stubs from "([^"]+)" should be called at most (?P<expectedCallCount>\d+) times$/')]
     public function addWiremockStubFromFileShouldBeCalledAtMostStep(string $path, int $expectedCallCount): void
     {
         $this->addWiremockStubFromFile($path, $expectedCallCount, self::STUB_MATCH_COUNT_STRATEGY_MAX);
@@ -381,7 +390,7 @@ class WiremockContext implements Context
                 case self::STUB_MATCH_COUNT_STRATEGY_EXACT:
                     if ($actualCount !== $expectedCount) {
                         $errors[] = sprintf(
-                            'Stub with URL "%s" was expected to be called exactly %d time(s), but was called %d time(s)',
+                            'Stub with URL "%s" was expected to be called %d time(s), but was called %d time(s)',
                             $url,
                             $expectedCount,
                             $actualCount
@@ -401,7 +410,7 @@ class WiremockContext implements Context
                 case self::STUB_MATCH_COUNT_STRATEGY_MIN:
                     if ($actualCount < $expectedCount) {
                         $errors[] = sprintf(
-                            'Stub with URL "%s" was expected to be called minimum %d time(s), but was called %d time(s)',
+                            'Stub with URL "%s" was expected to be called at least %d time(s), but was called %d time(s)',
                             $url,
                             $expectedCount,
                             $actualCount

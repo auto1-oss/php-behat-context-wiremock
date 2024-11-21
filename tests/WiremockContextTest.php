@@ -203,7 +203,7 @@ class WiremockContextTest extends TestCase
         $stubBody = '{"request": {"method": "GET", "url": "/test"}, "response": {"status": 200, "body": "Success"}}';
         $this->wiremockContext->addStub($stubBody, 1, 'exact');
         $this->expectException(WiremockContextException::class);
-        $this->expectExceptionMessage('Stub with URL "/test" was expected to be called exactly 1 time(s), but was called 2 time(s)');
+        $this->expectExceptionMessage('Stub with URL "/test" was expected to be called 1 time(s), but was called 2 time(s)');
         $this->wiremockContext->allStubsMatchedStep();
     }
 
@@ -336,7 +336,7 @@ class WiremockContextTest extends TestCase
         $stubBody = '{"request": {"method": "GET", "url": "/test"}, "response": {"status": 200, "body": "Success"}}';
         $this->wiremockContext->addStub($stubBody, 3, 'min');
         $this->expectException(WiremockContextException::class);
-        $this->expectExceptionMessage('Stub with URL "/test" was expected to be called minimum 3 time(s), but was called 2 time(s)');
+        $this->expectExceptionMessage('Stub with URL "/test" was expected to be called at least 3 time(s), but was called 2 time(s)');
         $this->wiremockContext->allStubsMatchedStep();
     }
 
