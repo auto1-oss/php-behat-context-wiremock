@@ -86,7 +86,7 @@ class WiremockContext implements Context
     /**
      * @throws WiremockContextException
      */
-    #[Given('/^wiremock stubs from "([^"]+)" should be called once')]
+    #[Given('/^wiremock stubs from "([^"]+)" should be called once$/')]
     public function addWiremockStubFromFileShouldBeCalledOnceStep(string $path): void
     {
         $this->addWiremockStubFromFile($path, 1, self::STUB_MATCH_COUNT_STRATEGY_EXACT);
