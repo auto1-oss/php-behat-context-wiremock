@@ -313,14 +313,18 @@ class WiremockContext implements Context
                 ));
             }
 
-            $mappedRequestStubId =  $requestData['stubMapping']['id'];
+            $mappedRequestStubId = $requestData['stubMapping']['id'];
             $requestedStubsIds[] = $mappedRequestStubId;
 
             if (!isset($requestedStubsCallCounts[$mappedRequestStubId])) {
-                $requestedStubsCallCounts[$mappedRequestStubId] = 0;
+                $requestedStubsCallCounts[$mappedRequestStubId] = [
+                    'count' => 0,
+                    'method' => $requestData["request"]["method"],
+                    'absoluteUrl' => $requestData["request"]["absoluteUrl"],
+                ];
             }
 
-            $requestedStubsCallCounts[$mappedRequestStubId]++;
+            $requestedStubsCallCounts[$mappedRequestStubId]['count']++;
         }
 
         $requestedStubsIds = array_unique($requestedStubsIds);
@@ -380,18 +384,22 @@ class WiremockContext implements Context
     {
         $errors = [];
 
-        foreach ($requestedStubsCallCounts as $stubId => $actualCount) {
+        foreach ($requestedStubsCallCounts as $stubId => $requestedStubCallCount) {
             $expectedCount = $this->stubs[$stubId]['count'];
             $expectedType = $this->stubs[$stubId]['type'];
 
-            $url = $this->stubs[$stubId]['response']['request']['urlPath'];
+            $actualCount = $requestedStubCallCount['count'];
+            $absoluteUrl = $requestedStubCallCount['absoluteUrl'];
+
+            $method = $requestedStubCallCount['method'];
 
             switch ($expectedType) {
                 case self::STUB_MATCH_COUNT_STRATEGY_EXACT:
                     if ($actualCount !== $expectedCount) {
                         $errors[] = sprintf(
-                            'Stub with URL "%s" was expected to be called %d time(s), but was called %d time(s)',
-                            $url,
+                            '%s "%s" was expected to be called %d time(s), but was called %d time(s)',
+                            $method,
+                            $absoluteUrl,
                             $expectedCount,
                             $actualCount
                         );
@@ -400,8 +408,9 @@ class WiremockContext implements Context
                 case self::STUB_MATCH_COUNT_STRATEGY_MAX:
                     if ($actualCount > $expectedCount) {
                         $errors[] = sprintf(
-                            'Stub with URL "%s" was expected to be called at most %d time(s), but was called %d time(s)',
-                            $url,
+                            '%s "%s" was expected to be called at most %d time(s), but was called %d time(s)',
+                            $method,
+                            $absoluteUrl,
                             $expectedCount,
                             $actualCount
                         );
@@ -410,8 +419,9 @@ class WiremockContext implements Context
                 case self::STUB_MATCH_COUNT_STRATEGY_MIN:
                     if ($actualCount < $expectedCount) {
                         $errors[] = sprintf(
-                            'Stub with URL "%s" was expected to be called at least %d time(s), but was called %d time(s)',
-                            $url,
+                            '%s "%s" was expected to be called at least %d time(s), but was called %d time(s)',
+                            $method,
+                            $absoluteUrl,
                             $expectedCount,
                             $actualCount
                         );
@@ -420,12 +430,19 @@ class WiremockContext implements Context
                 case self::STUB_MATCH_COUNT_STRATEGY_ANY:
                     break;
                 default:
-                    throw new WiremockContextException(sprintf('Unknown expectation type %s for URL %s', $expectedType, $url));
+                    throw new WiremockContextException(
+                        sprintf(
+                            'Unknown expectation type %s for %s %s',
+                            $method,
+                            $expectedType,
+                            $absoluteUrl
+                        )
+                    );
             }
+        }
 
-            if (!empty($errors)) {
-                throw new WiremockContextException(implode("\n", $errors));
-            }
+        if (!empty($errors)) {
+            throw new WiremockContextException(implode("\n", $errors));
         }
     }
 }
