@@ -1,5 +1,12 @@
 <?php
-
+/**
+ * This file is part of Auto1 PHP project.
+ *
+ * (c) Auto1 <https://github.com/auto1-oss>
+ *
+ * For the full copyright and license information, please view
+ * the LICENSE file that was distributed with this source code.
+ */
 namespace Auto1\BehatContext\Tests;
 
 use Auto1\BehatContext\Wiremock\Exception\WiremockContextException;
