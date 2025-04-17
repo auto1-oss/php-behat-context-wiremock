@@ -8,8 +8,6 @@
  * file that was distributed with this source code.
  */
 
-<?php
-
 namespace Auto1\BehatContext\Tests;
 
 use Auto1\BehatContext\Wiremock\Exception\WiremockContextException;
