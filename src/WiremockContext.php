@@ -12,6 +12,9 @@
 namespace Auto1\BehatContext\Wiremock;
 
 use Auto1\BehatContext\Wiremock\Exception\WiremockContextException;
+use Auto1\BehatContext\Wiremock\PlaceholderParser\PlaceholderParser;
+use Auto1\BehatContext\Wiremock\PlaceholderProcessorRegistry\PlaceholderProcessor\PlaceholderProcessorInterface;
+use Auto1\BehatContext\Wiremock\PlaceholderProcessorRegistry\PlaceholderProcessorRegistry;
 use Behat\Behat\Context\Context;
 use Behat\Behat\Hook\Scope\BeforeScenarioScope;
 use Behat\Gherkin\Node\PyStringNode;
@@ -44,10 +47,19 @@ class WiremockContext implements Context
      */
     private array $stubs = [];
 
+    private PlaceholderProcessorRegistry $placeholderProcessorRegistry;
+
+    private PlaceholderParser $placeholderParser;
+
+    /**
+     * @param PlaceholderProcessorInterface[] $placeholderProcessors
+     * @throws WiremockContextException
+     */
     public function __construct(
         private string $baseUrl,
         HttpClientInterface $client = null,
         private ?string $stubsDirectory = null,
+        private array $placeholderProcessors = [],
         private bool $cleanWiremockBeforeEachScenario = false,
         private bool $allStubsMatchedAfterEachScenario = false,
         private bool $stubsDirectoryIsFeatureDirectory = false,
@@ -55,6 +67,10 @@ class WiremockContext implements Context
         if ($stubsDirectoryIsFeatureDirectory === true && $stubsDirectory !== null) {
             throw new WiremockContextException('Only one of these arguments can be passed: stubsDirectory, stubsDirectoryIsFeatureDirectory');
         }
+
+        $this->placeholderProcessorRegistry = new PlaceholderProcessorRegistry($this->placeholderProcessors);
+
+        $this->placeholderParser = new PlaceholderParser();
 
         $this->client = $client ?: HttpClient::create();
     }
@@ -278,9 +294,39 @@ class WiremockContext implements Context
         $this->stubs[$stubId]['type'] = $type;
     }
 
+    /**
+     * @throws WiremockContextException
+     */
     private function loadStubFromFile(string $filePath, ?int $expectedCallCount, string $type): void
     {
-        $this->addStub(file_get_contents($filePath), $expectedCallCount, $type);
+        $body = file_get_contents($filePath);
+
+        if (count($this->placeholderProcessors) > 0) {
+            $body = $this->processPlaceholderValuesInjection($body);
+        }
+
+        $this->addStub($body, $expectedCallCount, $type);
+    }
+
+    private function processPlaceholderValuesInjection(string $rawBody): string
+    {
+        $pattern = '/%([a-zA-Z_][a-zA-Z0-9_]*)\(((?:[^%]|%(?![a-zA-Z_]))*?)\)%/';
+        $matches = [];
+
+        if (preg_match_all($pattern, $rawBody, $matches, PREG_SET_ORDER)) {
+            foreach ($matches as $match) {
+                $placeToInject = $match[0];
+                $processorName = $match[1];
+                $arguments = $this->placeholderParser->parse($match[2]);
+
+                $processor = $this->placeholderProcessorRegistry->getProcessor($processorName);
+                $contentToInject = $processor->process($this->stubsDirectory, [...$arguments]);
+
+                $rawBody = str_replace($placeToInject, $contentToInject, $rawBody);
+            }
+        }
+
+        return $rawBody;
     }
 
     /**

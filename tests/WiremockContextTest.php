@@ -11,6 +11,8 @@
 namespace Auto1\BehatContext\Tests;
 
 use Auto1\BehatContext\Wiremock\Exception\WiremockContextException;
+use Auto1\BehatContext\Wiremock\PlaceholderProcessorRegistry\PlaceholderProcessor\FlattenTextProcessor;
+use Auto1\BehatContext\Wiremock\PlaceholderProcessorRegistry\PlaceholderProcessor\JsonToUrlEncodedQueryStringProcessor;
 use Auto1\BehatContext\Wiremock\WiremockContext;
 use PHPUnit\Framework\TestCase;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
@@ -18,15 +20,27 @@ use Symfony\Contracts\HttpClient\ResponseInterface;
 
 class WiremockContextTest extends TestCase
 {
-    private $httpClient;
-    private $wiremockContext;
+    private HttpClientInterface $httpClient;
+    private WiremockContext $wiremockContext;
+    private string $defaultStubsDir;
 
     protected function setUp(): void
     {
-        $this->httpClient      = $this->createMock(HttpClientInterface::class);
+        $this->httpClient = $this->createMock(HttpClientInterface::class);
+
+        $this->defaultStubsDir = sys_get_temp_dir() . '/wiremock_stubs';
+        if (!is_dir($this->defaultStubsDir)) {
+            mkdir($this->defaultStubsDir, 0700, true);
+        }
+
+        $flattenTextProcessor = new FlattenTextProcessor();
+        $jsonProcessor = new JsonToUrlEncodedQueryStringProcessor();
+
         $this->wiremockContext = new WiremockContext(
             'http://wiremock:8080',
-            $this->httpClient
+            $this->httpClient,
+            $this->defaultStubsDir,
+            [$flattenTextProcessor, $jsonProcessor]
         );
     }
 
@@ -420,5 +434,157 @@ class WiremockContextTest extends TestCase
         $stubBody = '{"request": {"method": "GET", "url": "/test"}, "response": {"status": 200, "body": "Success"}}';
         $this->wiremockContext->addStub($stubBody, 1, 'min');
         $this->wiremockContext->allStubsMatchedStep();
+    }
+
+    public function testAddWiremockStubFromFileStepWithPlaceholderProcessing(): void
+    {
+        try {
+            $stubContent = json_encode([
+                'request' => [
+                    'method' => 'POST',
+                    'urlPath' => '/api/test',
+                    'bodyPatterns' => [
+                        ['equalToJson' => '%flatten_text(test_data.json)%']
+                    ]
+                ],
+                'response' => [
+                    'status' => 200,
+                    'jsonBody' => [
+                        'message' => 'success',
+                        'query' => '%json_to_url_encoded_query_string(query_data.json, [])%'
+                    ]
+                ]
+            ], JSON_PRETTY_PRINT);
+
+            file_put_contents($this->defaultStubsDir . '/test_stub.json', $stubContent);
+
+            $testDataContent = "  This is   a test\n  with   multiple   spaces  \n  and newlines  ";
+            file_put_contents($this->defaultStubsDir . '/test_data.json', $testDataContent);
+
+            $queryData = json_encode(['param1' => 'value1', 'param2' => 'value2']);
+            file_put_contents($this->defaultStubsDir . '/query_data.json', $queryData);
+
+            $dummyResponse = $this->createMock(ResponseInterface::class);
+            $dummyResponse->expects($this->once())->method('toArray')->willReturn(['id' => 'stub-123']);
+
+            $this->httpClient->expects($this->once())
+                ->method('request')
+                ->with(
+                    'POST',
+                    'http://wiremock:8080/__admin/mappings',
+                    $this->callback(function ($options) {
+                        $body = json_decode($options['body'], true);
+
+                        return $body['request']['bodyPatterns'][0]['equalToJson'] === 'This is a test with multiple spaces and newlines'
+                            && $body['response']['jsonBody']['query'] === 'param1=value1&param2=value2';
+                    })
+                )
+                ->willReturn($dummyResponse);
+
+            $this->wiremockContext->addWiremockStubFromFileStep('test_stub.json');
+
+        } finally {
+            $filesToClean = ['test_stub.json', 'test_data.json', 'query_data.json'];
+            foreach ($filesToClean as $file) {
+                if (file_exists($this->defaultStubsDir . '/' . $file)) {
+                    unlink($this->defaultStubsDir . '/' . $file);
+                }
+            }
+        }
+    }
+
+    public function testAddWiremockStubFromFileStepWithMultiplePlaceholders(): void
+    {
+        try {
+            $stubContent = json_encode([
+                'request' => [
+                    'method' => 'GET',
+                    'urlPath' => '/api/data',
+                    'queryParameters' => [
+                        'filter' => ['equalTo' => '%flatten_text(filter.txt)%']
+                    ]
+                ],
+                'response' => [
+                    'status' => 200,
+                    'body' => '%flatten_text(response.txt)%'
+                ]
+            ], JSON_PRETTY_PRINT);
+
+            file_put_contents($this->defaultStubsDir . '/multi_placeholder_stub.json', $stubContent);
+
+            file_put_contents($this->defaultStubsDir . '/filter.txt', "  category:electronics   AND   price:>100  ");
+            file_put_contents($this->defaultStubsDir . '/response.txt', "  Success!   Data   retrieved   successfully.  ");
+
+            $queryParamsData = json_encode(['search' => 'test', 'limit' => '10']);
+            file_put_contents($this->defaultStubsDir . '/query_params.json', $queryParamsData);
+
+            $dummyResponse = $this->createMock(ResponseInterface::class);
+            $dummyResponse->expects($this->once())->method('toArray')->willReturn(['id' => 'stub-456']);
+
+            $this->httpClient->expects($this->once())
+                ->method('request')
+                ->with(
+                    'POST',
+                    'http://wiremock:8080/__admin/mappings',
+                    $this->callback(function ($options) {
+                        $body = json_decode($options['body'], true);
+
+                        return $body['request']['queryParameters']['filter']['equalTo'] === 'category:electronics AND price:>100'
+                            && $body['response']['body'] === 'Success! Data retrieved successfully.';
+                    })
+                )
+                ->willReturn($dummyResponse);
+
+            $this->wiremockContext->addWiremockStubFromFileStep('multi_placeholder_stub.json');
+
+        } finally {
+            $filesToClean = ['multi_placeholder_stub.json', 'filter.txt', 'response.txt', 'query_params.json'];
+            foreach ($filesToClean as $file) {
+                if (file_exists($this->defaultStubsDir . '/' . $file)) {
+                    unlink($this->defaultStubsDir . '/' . $file);
+                }
+            }
+        }
+    }
+
+    public function testAddWiremockStubFromFileStepWithoutPlaceholders(): void
+    {
+        try {
+            $stubContent = json_encode([
+                'request' => [
+                    'method' => 'GET',
+                    'urlPath' => '/api/simple'
+                ],
+                'response' => [
+                    'status' => 200,
+                    'jsonBody' => [
+                        'message' => 'No placeholders here'
+                    ]
+                ]
+            ], JSON_PRETTY_PRINT);
+
+            file_put_contents($this->defaultStubsDir . '/simple_stub.json', $stubContent);
+
+            $dummyResponse = $this->createMock(ResponseInterface::class);
+            $dummyResponse->expects($this->once())->method('toArray')->willReturn(['id' => 'stub-simple']);
+
+            $this->httpClient->expects($this->once())
+                ->method('request')
+                ->with(
+                    'POST',
+                    'http://wiremock:8080/__admin/mappings',
+                    $this->callback(function ($options) use ($stubContent) {
+                        return $options['body'] === $stubContent;
+                    })
+                )
+                ->willReturn($dummyResponse);
+
+            $this->wiremockContext->addWiremockStubFromFileStep('simple_stub.json');
+
+        } finally {
+            if (file_exists($this->defaultStubsDir . '/simple_stub.json')) {
+                unlink($this->defaultStubsDir . '/simple_stub.json');
+            }
+        }
     }
 }
