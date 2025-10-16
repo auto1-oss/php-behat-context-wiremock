@@ -25,15 +25,15 @@ class JsonToUrlEncodedQueryStringProcessor extends AbstractFileBasedPlaceholderP
         }
 
         $jsonData = json_decode(trim($fileContent), true);
-        if ($jsonData === null) {
+        if (json_last_error() !== JSON_ERROR_NONE) {
             throw new WiremockContextException(
-                sprintf('Invalid JSON in file: %s', $args[0])
+                sprintf('Invalid JSON in file: %s, error: %s', $args[0], json_last_error_msg())
             );
         }
 
         foreach ($jsonData as $key => $value) {
-            if (is_array($value) || is_object($value)) {
-                $jsonData[$key] = json_encode($value);
+            if (is_float($value) || is_array($value) || is_object($value)) {
+                $jsonData[$key] = json_encode($value, JSON_THROW_ON_ERROR | JSON_PRESERVE_ZERO_FRACTION);
             }
         }
 
