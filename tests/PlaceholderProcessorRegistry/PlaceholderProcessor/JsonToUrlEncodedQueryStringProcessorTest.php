@@ -385,6 +385,7 @@ class JsonToUrlEncodedQueryStringProcessorTest extends TestCase
             "string": "text",
             "integer": 42,
             "float": 3.14,
+            "float_00": 3.00,
             "boolean_true": true,
             "boolean_false": false,
             "null_value": null,
@@ -395,9 +396,7 @@ class JsonToUrlEncodedQueryStringProcessorTest extends TestCase
 
         $result = $this->processor->process($this->testStubsDirectory, [$filename, []]);
 
-        $expectedArray = rawurlencode('[1,2,3]');
-        $expectedObject = rawurlencode('{"nested":"value"}');
-        $expected = "string=text&integer=42&float=3.14&boolean_true=1&boolean_false=0&array={$expectedArray}&object={$expectedObject}";
+        $expected = "string=text&integer=42&float=3.14&float_00=3.0&boolean_true=1&boolean_false=0&array=%5B1%2C2%2C3%5D&object=%7B%22nested%22%3A%22value%22%7D";
 
         $this->assertEquals($expected, $result);
     }

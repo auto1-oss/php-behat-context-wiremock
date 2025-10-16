@@ -57,7 +57,7 @@ class WiremockContext implements Context
      */
     public function __construct(
         private string $baseUrl,
-        HttpClientInterface $client = null,
+        ?HttpClientInterface $client = null,
         private ?string $stubsDirectory = null,
         private array $placeholderProcessors = [],
         private bool $cleanWiremockBeforeEachScenario = false,
